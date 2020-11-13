@@ -120,17 +120,20 @@ class MagneticField:
     """
     Representing the magnetic field at a given position on Earth
     Default is for Lille in France
+
+    Attributes:
+    name: name of the location
+    lat: latitude
+    lon: longitude
+    int: Earth magnetic field intensity in Tesla
+    i_deg: Magnetic field inclination in degrees, positive when pointing down
+
+    Properties:
+    i: Magnetic field inclination in radians, positive when pointing down
     """
     
     def __init__(self, name="Lille", lat=50.6333, lon=3.0667,
         intensity=4.8699e-8, i_deg=65.822):
-        """
-        name: name of the location
-        lat: latitude
-        lon: longitude
-        int: Earth magnetic field intensity in Tesla
-        i_deg: Magnetic field inclination in degrees, positive when pointing down
-        """
         self.name = name
         self.lat = lat
         self.lon = lon
@@ -149,13 +152,26 @@ class MagneticField:
 class Balance:
     """
     Computing the balance tests of the compass
+
+    Attributes:
+    comp: Compass object
+    mg_fld: MagneticField object
+    theta_lim: Limit angle of lateral inclination of the compass, degrees
+    alpha_lim: Limit of tolerance for the angle between the needle and the 
+    north when inclining the compass
+
+    Properties:
+    x_opti: optimal offset of the magnet so the compass is perfectly balanced
+    for the given magnetic field.
+    alpha_err: angle of the needle with north when the compass is inclined of
+    theta_lim
     """
 
-    def __init__(self, comp, mg_fld, theta_lim=0, alpha_lim=0):
-        self.comp = comp # Compass tested
-        self.mg_fld = mg_fld # Magnetic field for the test
-        self.theta_lim = theta_lim # Limit angle of lateral inclination of the compass
-        self.alpha_lim = alpha_lim # Limit of tolerance for the angle between the needle and the north when inclining the compass
+    def __init__(self, comp, mg_fld, theta_lim=40, alpha_lim=0):
+        self.comp = comp
+        self.mg_fld = mg_fld
+        self.theta_lim = theta_lim
+        self.alpha_lim = alpha_lim
 
     @property
     def x_opti(self):
@@ -164,8 +180,8 @@ class Balance:
         for the given magnetic field
         """
         return -self.comp.mag_rem * self.comp.V * self.mg_fld.int * \
-            math.sin(self.mg_fld.i) / (MAG_PER * (self.comp.m - self.comp.rho * \
-            self.comp.V) * G)
+            math.sin(self.mg_fld.i) / (MAG_PER * (self.comp.m - \
+            self.comp.rho * self.comp.V) * G)
     
     @property
     def alpha_err(self):
@@ -175,7 +191,8 @@ class Balance:
         return math.atan(((self.comp.rho * self.comp.V - self.comp.m) * \
             G * self.comp.x * MAG_PER / (self.comp.mag_rem * self.mg_fld.int *\
             math.cos(self.mg_fld.i)) - math.tan(self.mg_fld.i)) * \
-            math.sin(self.theta_lim))
+            math.sin(math.radians(self.theta_lim)))
+
 
 class Dynamic:
     """
