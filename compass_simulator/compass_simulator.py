@@ -56,7 +56,7 @@ class Compass:
         name="R500",
         needle_length=0.032,
         needle_width=0.008,
-        needle_thickness=0000.25,
+        needle_thickness=0.00025,
         needle_disk_density=1200,
         disk_radius=0.0115,
         disk_thickness=0.0001,
@@ -92,7 +92,7 @@ class Compass:
         """
         inertial moment of needle assembly related to z axis
         """
-        disk_mom = math.pi() * math.pow(self.disk_radius, 4) * \
+        disk_mom = math.pi * math.pow(self.disk_radius, 4) * \
             self.disk_thickness * self.needle_disk_density / 2
         
         needle_mom = self.needle_length * self.needle_width * \
@@ -108,7 +108,7 @@ class Compass:
         """
         inertial moment of needle assembly related to z axis
         """
-        coef = -self.viscosity * (1 / self.z_h + self.z_b) * (math.pi() * \
+        coef = -self.viscosity * (1 / self.z_h + self.z_b) * (math.pi * \
             math.pow(self.disk_radius, 4) / 2 + \
             (math.pow(self.needle_length, 3) / 8 - math.pow(self.disk_radius, \
             3)) * self.needle_width / 3 + (self.needle_length / 2 - \
@@ -197,16 +197,43 @@ class Balance:
 class Dynamic:
     """
     Class for rapidity and stability tests
+
+    Attributes: Compass tested
+    comp: 
+    mg_fld: Magnetic field for the test
+    alpha_init_deg: Initial needle angle in degrees
+    tf_rap: Final time rapidity test in seconds
+    tf_stab: Final time stability test in seconds
+    t_int: Integration time interval in seconds
+    Y: Oscillation range in meters
+    f: Oscillation frenquency in steps (double steps) per minutes
+    exp_coef_mg: Ajustment coeficient to ajuste the simulation with
+        experimental results
+    exp_coef_visc: Ajustment coeficient to ajuste the simulation with
+        experimental results
     """
-    def __init__(self, comp, mg_fld):
-        self.comp = comp # Compass tested
-        self.mg_fld = mg_fld # Magnetic field for the test
-        self.alpha_init = math.pi / 2 # Initial needle angle in radians
-        self.tf_rap = 2 # Final time rapidity test in seconds
-        self.tf_stab = 5 # Final time stability test in seconds
-        self.t_int = 0.01 # Integration time interval in seconds
-        self.Y = 0.093 # Oscillation range in meters
-        self.f = 70 # Oscillation frenquency in steps (double steps) per minutes
+    def __init__(self,
+        comp,
+        mg_fld,
+        alpha_init_deg=90,
+        tf_rap=3,
+        tf_stab=5,
+        t_int=0.01,
+        Y=0.093,
+        f=70,
+        exp_coef_mg=1,
+        exp_coef_visc=1,
+    ):
+        self.comp = comp
+        self.mg_fld = mg_fld
+        self.alpha_init_deg = alpha_init_deg
+        self.tf_rap = tf_rap
+        self.tf_stab = tf_stab
+        self.t_int = t_int
+        self.Y = Y
+        self.f = f
+        self.exp_coef_mg = exp_coef_mg
+        self.exp_coef_visc = exp_coef_visc
         self.t_rap = np.arange(0, self.tf_rap, self.t_int) # Time range for rapidity
         self.t_stab = np.arange(0, self.tf_stab, self.t_int) # Time range for stability
         self.rapidity_results = None
@@ -216,6 +243,10 @@ class Dynamic:
         self.rapidity_results_exp = None
         self.tho = None # Time when the angle of the needle stay under 5° compared to north, for rapidity test
     
+    @property
+    def alpha_init(self):
+        return math.radians(self.alpha_init_deg)
+
     @property
     def w(self):
         return math.pi * self.f / 60
@@ -227,23 +258,25 @@ class Dynamic:
         """
         Magnetic term of the second order equation.
         """
-        return -self.comp.mag_rem * self.comp.V * self.mg_fld.int * \
-            math.cos(self.mg_fld.i) / (MAG_PER * self.comp.mom_z)
+        return -self.exp_coef_mg * self.comp.mag_rem * self.comp.V * \
+            self.mg_fld.int * math.cos(self.mg_fld.i) / (MAG_PER * \
+            self.comp.mom_z)
 
     @property
     def visc_trm(self):
         """
         Viscous term of the second order equation.
         """
-        return -12 * math.sqrt(-self.mg_trm) / 10
-        #return -self.comp.visc / self.comp.mom_z
+        # return -12 * math.sqrt(-self.mg_trm) / 10
+        return -self.exp_coef_visc * self.comp.visc_coef / self.comp.mom_z
     
     @property
     def ext_trm(self):
         """
         external excitation term of the second order equation.
         """
-        return self.comp.m * self.comp.x * self.Y * math.pow((math.pi * self.f / 30), 2) / self.comp.mom_z
+        return self.comp.m * self.comp.x * self.Y * math.pow((math.pi * \
+            self.f / 30), 2) / self.comp.mom_z
     
     # Parameters for simplified simulation (small angles hypothesis)
 
@@ -252,14 +285,17 @@ class Dynamic:
         """
         Amplification factor if small angles hypothesis (linear equation).
         """
-        return 1 / (math.sqrt(math.pow(self.mg_trm * self.comp.mom_z - self.comp.mom_z * math.pow(self.w, 2), 2) + math.pow(self.comp.visc * self.w, 2)))
+        return 1 / (math.sqrt(math.pow(self.mg_trm * self.comp.mom_z - \
+            self.comp.mom_z * math.pow(self.w, 2), 2) + \
+            math.pow(self.comp.visc * self.w, 2)))
     
     @property
     def phase(self):
         """
         Phase offset if small angles hypothesis (linear equation).
         """
-        return math.atan(self.comp.visc * self.w / (self.comp.mom_z * math.pow(self.w, 2)) - self.mg_trm * self.comp.mom_z)
+        return math.atan(self.comp.visc * self.w / (self.comp.mom_z * \
+            math.pow(self.w, 2)) - self.mg_trm * self.comp.mom_z)
     
     def rapidity(self):
         def F(t, x):
@@ -267,7 +303,9 @@ class Dynamic:
             xdot[0] = self.mg_trm * math.sin(x[1]) + self.visc_trm * x[0]
             xdot[1] = x[0]
             return xdot
-        sol = solve_ivp(fun=F, t_span=(0, self.tf_rap), y0=[0, self.alpha_init], t_eval=self.t_rap)
+        sol = solve_ivp(fun=F, t_span=(0, self.tf_rap),
+            y0=[0, self.alpha_init], t_eval=self.t_rap,
+        )
         self.rapidity_results = sol.y[1]
 
     def rapidity_simple(self):
@@ -276,7 +314,9 @@ class Dynamic:
             xdot[0] = self.mg_trm * x[1] + self.visc_trm * x[0]
             xdot[1] = x[0]
             return xdot
-        sol = solve_ivp(fun=F, t_span=(0, self.tf_rap), y0=[0, self.alpha_init], t_eval=self.t_rap)
+        sol = solve_ivp(fun=F, t_span=(0, self.tf_rap),
+            y0=[0, self.alpha_init], t_eval=self.t_rap,
+        )
         self.rapidity_results_s = sol.y[1]
     
     def rapidity_exp(self, file_name):
@@ -295,19 +335,26 @@ class Dynamic:
     def stability(self):
         def F(t, x):
             xdot = [[],[]]
-            xdot[0] = self.mg_trm * math.sin(x[1]) + self.visc_trm * x[0] + self.ext_trm * math.cos(x[1]) * math.sin(math.pi * self.f * t / 30)
+            xdot[0] = self.mg_trm * math.sin(x[1]) + self.visc_trm * x[0] + \
+                self.ext_trm * math.cos(x[1]) * math.sin(math.pi * self.f * \
+                t / 30)
             xdot[1] = x[0]
             return xdot
-        sol = solve_ivp(fun=F, t_span=(0, self.tf_stab), y0=[0, 0], t_eval=self.t_stab)
+        sol = solve_ivp(fun=F, t_span=(0, self.tf_stab), y0=[0, 0],
+            t_eval=self.t_stab,
+        )
         self.stability_results = sol.y[1]
     
     def stability_simple(self):
         def F(t, x):
             xdot = [[],[]]
-            xdot[0] = self.mg_trm * x[1] + self.visc_trm * x[0] + self.ext_trm * math.sin(math.pi * self.f * t / 30)
+            xdot[0] = self.mg_trm * x[1] + self.visc_trm * x[0] + \
+                self.ext_trm * math.sin(math.pi * self.f * t / 30)
             xdot[1] = x[0]
             return xdot
-        sol = solve_ivp(fun=F, t_span=(0, self.tf_stab), y0=[0, 0], t_eval=self.t_stab)
+        sol = solve_ivp(fun=F, t_span=(0, self.tf_stab), y0=[0, 0],
+            t_eval=self.t_stab
+        )
         self.stability_results_s = sol.y[1]
 
     def display_stab(self):
