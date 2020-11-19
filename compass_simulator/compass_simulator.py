@@ -198,8 +198,8 @@ class Dynamic:
     """
     Class for rapidity and stability tests
 
-    Attributes: Compass tested
-    comp: 
+    Attributes:
+    comp: Compass tested
     mg_fld: Magnetic field for the test
     alpha_init_deg: Initial needle angle in degrees
     tf_rap: Final time rapidity test in seconds
@@ -373,6 +373,39 @@ class Dynamic:
         plt.show()
     
 # 4/ Functions
+
+def double_cylindric_magnet(
+    radius=0.00075,
+    length=0.01,
+    interaxis=0.003,
+    density=7500
+):
+    """
+    Function to get the masse, volume and inertial moment of a double
+    cylindre magnet, like for GEONAUTE R900 compass. International system units
+    """
+    V = 2 * math.pow(radius, 2) * math.pi * length
+    m = V * density
+    mom_z = m * (math.pow(radius, 2) / 4 + math.pow(length, 2) / 12 + \
+        math.pow(interaxis / 2, 2))
+    return {"V": V, "m": m, "mom_z": mom_z}
+
+def parallelepiped_magnet(
+    length=0.01,
+    width=0.006,
+    thickness=0.001,
+    density=7500
+):
+    """
+    Function to get the masse, volume and inertial moment of a parallelepiped
+    magnet. International system units.
+    The hole for the axis is ignored.
+    """
+    V = length * width * thickness
+    m = V * density
+    mom_z = m * (math.pow(radius, 2) / 4 + math.pow(length, 2) / 12 + \
+        math.pow(interaxis / 2, 2))
+    return {"V": V, "m": m, "mom_z": mom_z}
 
 def compasses_from_excel(file_name):
     """
