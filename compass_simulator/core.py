@@ -377,7 +377,7 @@ class Dynamic:
 def double_cylindric_magnet(
     radius=0.00075,
     length=0.01,
-    interaxis=0.003,
+    center_distance=0.0015,
     density=7500
 ):
     """
@@ -387,7 +387,7 @@ def double_cylindric_magnet(
     V = 2 * math.pow(radius, 2) * math.pi * length
     m = V * density
     mom_z = m * (math.pow(radius, 2) / 4 + math.pow(length, 2) / 12 + \
-        math.pow(interaxis / 2, 2))
+        math.pow(center_distance, 2))
     return {"V": V, "m": m, "mom_z": mom_z}
 
 def parallelepiped_magnet(
@@ -403,8 +403,7 @@ def parallelepiped_magnet(
     """
     V = length * width * thickness
     m = V * density
-    mom_z = m * (math.pow(radius, 2) / 4 + math.pow(length, 2) / 12 + \
-        math.pow(interaxis / 2, 2))
+    mom_z = m * (math.pow(length, 2) + math.pow(width, 2)) / 12
     return {"V": V, "m": m, "mom_z": mom_z}
 
 def compasses_from_excel(file_name):
