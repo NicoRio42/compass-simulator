@@ -61,14 +61,14 @@ class Compass:
         disk_radius=0.0115,
         disk_thickness=0.0001,
         mag_rem=1.3,
-        V=0.00001,
-        m=0.0001,
-        magnet_mom_z=0,
-        x=-0.5,
+        V=6e-8,
+        m=0.00045,
+        magnet_mom_z=5.1e-09,
+        x=-0.0005,
         rho=700,
-        viscosity=0,
-        z_h=0.008,
-        z_b=0.008,
+        viscosity=1.08,
+        z_h=0.004,
+        z_b=0.004,
     ):
         self.name = name
         self.needle_length = needle_length
@@ -101,6 +101,7 @@ class Compass:
             math.pow(self.needle_width, 2)) / 12
         
         mom = disk_mom + needle_mom + self.magnet_mom_z + self.m * math.pow(self.x, 2)
+        #mom = 7.8e-9
         return mom
 
     @property
@@ -108,11 +109,12 @@ class Compass:
         """
         inertial moment of needle assembly related to z axis
         """
-        coef = -self.viscosity * (1 / self.z_h + self.z_b) * (math.pi * \
+        coef = self.viscosity * (1 / self.z_h + 1 / self.z_b) * (math.pi * \
             math.pow(self.disk_radius, 4) / 2 + \
             (math.pow(self.needle_length, 3) / 8 - math.pow(self.disk_radius, \
             3)) * self.needle_width / 3 + (self.needle_length / 2 - \
             self.disk_radius) * math.pow(self.needle_width, 3) / 12)
+        #coef = 8e-8
         return coef
 
 
@@ -133,7 +135,7 @@ class MagneticField:
     """
     
     def __init__(self, name="Lille", lat=50.6333, lon=3.0667,
-        intensity=4.8699e-8, i_deg=65.822):
+        intensity=4.8699e-5, i_deg=65.822):
         self.name = name
         self.lat = lat
         self.lon = lon
@@ -211,6 +213,12 @@ class Dynamic:
         experimental results
     exp_coef_visc: Ajustment coeficient to ajuste the simulation with
         experimental results
+    tho_lim: Limit for tho in degrees, default 5°
+
+    tho: Time when the angle of the needle stay under tho_lim compared to
+        north, for rapidity test
+    stab_amp: Amplitude of the needle oscillation for the stability test,
+        calculated for the second half of the time range. Degrees
     """
     def __init__(self,
         comp,
@@ -223,6 +231,7 @@ class Dynamic:
         f=70,
         exp_coef_mg=1,
         exp_coef_visc=1,
+        tho_lim=5,
     ):
         self.comp = comp
         self.mg_fld = mg_fld
@@ -234,6 +243,8 @@ class Dynamic:
         self.f = f
         self.exp_coef_mg = exp_coef_mg
         self.exp_coef_visc = exp_coef_visc
+        self.tho_lim = tho_lim
+
         self.t_rap = np.arange(0, self.tf_rap, self.t_int) # Time range for rapidity
         self.t_stab = np.arange(0, self.tf_stab, self.t_int) # Time range for stability
         self.rapidity_results = None
@@ -241,7 +252,8 @@ class Dynamic:
         self.stability_results_s = None
         self.rapidity_results_s = None
         self.rapidity_results_exp = None
-        self.tho = None # Time when the angle of the needle stay under 5° compared to north, for rapidity test
+        self.tho = None
+        self.stab_amp = None
     
     @property
     def alpha_init(self):
@@ -267,7 +279,9 @@ class Dynamic:
         """
         Viscous term of the second order equation.
         """
-        # return -12 * math.sqrt(-self.mg_trm) / 10
+        # The following comment return a viscous term that match with the
+        # experimental plot shape
+        # return -6 * math.sqrt(-self.mg_trm) / 5
         return -self.exp_coef_visc * self.comp.visc_coef / self.comp.mom_z
     
     @property
@@ -306,7 +320,8 @@ class Dynamic:
         sol = solve_ivp(fun=F, t_span=(0, self.tf_rap),
             y0=[0, self.alpha_init], t_eval=self.t_rap,
         )
-        self.rapidity_results = sol.y[1]
+        self.rapidity_results = np.degrees(sol.y[1])
+        self.calculate_tho()
 
     def rapidity_simple(self):
         def F(t, x):
@@ -343,7 +358,8 @@ class Dynamic:
         sol = solve_ivp(fun=F, t_span=(0, self.tf_stab), y0=[0, 0],
             t_eval=self.t_stab,
         )
-        self.stability_results = sol.y[1]
+        self.stability_results = np.degrees(sol.y[1])
+        self.calculate_stab_amp()
     
     def stability_simple(self):
         def F(t, x):
@@ -371,6 +387,26 @@ class Dynamic:
         if self.rapidity_results_exp != None:
             plt.plot(self.rapidity_results_exp[0], self.rapidity_results_exp[1])
         plt.show()
+    
+    def calculate_tho(self):
+        """
+        Calculate tho 
+        """
+        for i in range(1, len(self.rapidity_results) - 1):
+            if ((abs(self.rapidity_results[i - 1]) > self.tho_lim) and \
+                (abs(self.rapidity_results[i]) < self.tho_lim)) or \
+                ((abs(self.rapidity_results[i - 1]) < self.tho_lim) and \
+                (abs(self.rapidity_results[i]) > self.tho_lim)):
+                self.tho = self.t_rap[i]
+    
+    def calculate_stab_amp(self):
+        """
+        Calculate stab_amp
+        """
+        index = round(len(self.stability_results) / 2)
+        second_half = self.stability_results[-index:]
+        self.stab_amp = np.max(second_half) - np.min(second_half)
+
     
 # 4/ Functions
 
@@ -408,7 +444,8 @@ def parallelepiped_magnet(
 
 def compasses_from_excel(file_name):
     """
-    Return a list of dictionnary containing the attributes of the compasses stored in the excel file.
+    Return a list of dictionnary containing the attributes of the compasses
+    stored in the excel file.
     """
     doc = xlrd.open_workbook(file_name)
     sheet_1 = doc.sheet_by_index(0)
@@ -418,13 +455,15 @@ def compasses_from_excel(file_name):
     for c in range(3, cols):
         comp = {}
         for r in range(0, rows):
-            comp[sheet_1.cell_value(rowx=r, colx=0)] = sheet_1.cell_value(rowx=r, colx=c)
+            comp[sheet_1.cell_value(rowx=r, colx=0)] = \
+                sheet_1.cell_value(rowx=r, colx=c)
         compasses.append(comp)
     return compasses
 
 def locations_from_excel(file_name):
     """
-    Return a list of dictionnary containing the attributes of the locations stored in the excel file.
+    Return a list of dictionnary containing the attributes of the locations
+    stored in the excel file.
     """
     doc = xlrd.open_workbook(file_name)
     sheet_1 = doc.sheet_by_index(0)
@@ -434,13 +473,15 @@ def locations_from_excel(file_name):
     for c in range(1, cols):
         loc = {}
         for r in range(0, rows):
-            loc[sheet_1.cell_value(rowx=r, colx=0)] = sheet_1.cell_value(rowx=r, colx=c)
+            loc[sheet_1.cell_value(rowx=r, colx=0)] = \
+                sheet_1.cell_value(rowx=r, colx=c)
         locations.append(loc)
     return locations
 
 def balance_map(comp, theta_lim, alpha_lim):
     """
-    Draw the zone on the planisphere where the compass is acceptable, according to theta_lim and alpha_lim
+    Draw the zone on the planisphere where the compass is acceptable, according
+    to theta_lim and alpha_lim
     """
     lower_lim = []
     opti = []
@@ -470,11 +511,18 @@ def balance_map(comp, theta_lim, alpha_lim):
             a_ant_abs = copy.deepcopy(a_abs)
     
     world_map = mpimg.imread('images/Equirectangular_projection_SW.png')
-    plt.imshow(world_map, interpolation='none', extent=[-180, 180, -90, 90], clip_on=True)
+    plt.imshow(
+        world_map,
+        interpolation='none',
+        extent=[-180, 180, -90, 90],
+        clip_on=True
+    )
     plt.plot(longitudes, lower_lim, 'g-', label = "Lower limit")
     plt.plot(longitudes, upper_lim, 'r-', label = "Upper limit")
     plt.plot(longitudes, opti, 'b-', label = "Optimal balance")
-    plt.title(('Acceptability zone for θ limit = ' + str(math.degrees(theta_lim)) + '° and α limit = ' + str(math.degrees(alpha_lim)) + '°'))
+    plt.title(('Acceptability zone for θ limit = ' + \
+        str(math.degrees(theta_lim)) + '° and α limit = ' + \
+        str(math.degrees(alpha_lim)) + '°'))
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
     plt.legend()
@@ -485,7 +533,9 @@ def iso_x_map(comp):
     Draw the iso curves of x, every 0,1 mm
     """
     x_iso = np.arange(0.0008, -0.0009, -0.0001)
-    c = [[] for i in range(17)] # Liste of isocurves for x between -0,0008 and 0,0008
+
+    # Liste of isocurves for x between -0,0008 and 0,0008
+    c = [[] for i in range(17)]
     longitudes = np.arange(-180, 185, 10)
 
     for lon in longitudes:
@@ -505,7 +555,12 @@ def iso_x_map(comp):
     j = 0
     for iso in c:
         world_map = mpimg.imread('images/Equirectangular_projection_SW.png')
-        plt.imshow(world_map, interpolation='none', extent=[-180, 180, -90, 90], clip_on=True)
+        plt.imshow(
+            world_map,
+            interpolation='none',
+            extent=[-180, 180, -90, 90],
+            clip_on=True
+        )
         plt.plot(longitudes, iso, 'r-', label = ("x = " + str(x_iso[j]) + "m"))
         j = j + 1
     plt.show()
