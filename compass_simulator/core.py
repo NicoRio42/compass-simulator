@@ -1,7 +1,7 @@
 """
 ===========================================================================
 Modelize the static and dynamic behaviour ok an orienteering compass in the
-Earth magnetic feild
+Earth magnetic field
 Every parameters are in international system units, angles in radians
 ===========================================================================
 
