@@ -94,11 +94,11 @@ comp = Compass()
 mag_fld = MagneticField()
 ```
 
-Create a Dynamic object for dynamic simulations
+Create a Dynamic object with default parameters for dynamic simulations.
 ```py
 from compass_simulator.core import Dynamic
 
-dyn = Dynamic(comp, mag_fld, exp_coef_visc=6e-3)
+dyn = Dynamic(comp, mag_fld)
 ```
 
 Run the stability simulation, and display the result graph.
