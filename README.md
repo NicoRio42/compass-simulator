@@ -1,6 +1,6 @@
 # Compass simulator
 
-A Python package to make balance, stability and rapidity simulations of an orienteering compass.
+A Python package to run balance, stability and rapidity simulations of an orienteering compass.
 
 ## Table of Contents
 <!-- TABLE OF CONTENTS -->
