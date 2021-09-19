@@ -3,8 +3,9 @@
 A Python package to make balance, stability and rapidity simulations of an orienteering compass.
 
 <!-- TABLE OF CONTENTS -->
+## Table of Contents
+
 <details open="open">
-  <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
   <ol>
     <li>
       <a href="#about-the-project">About The Project</a>
