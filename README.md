@@ -19,7 +19,7 @@ A Python package to make balance, stability and rapidity simulations of an orien
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Example usage</a></li>
+    <li><a href="#example-usage">Example usage</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
