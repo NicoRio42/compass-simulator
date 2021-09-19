@@ -2,9 +2,8 @@
 
 A Python package to make balance, stability and rapidity simulations of an orienteering compass.
 
-<!-- TABLE OF CONTENTS -->
 ## Table of Contents
-
+<!-- TABLE OF CONTENTS -->
 <details open="open">
   <ol>
     <li>
@@ -20,7 +19,7 @@ A Python package to make balance, stability and rapidity simulations of an orien
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
+    <li><a href="#usage">Exemple usage</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -74,21 +73,39 @@ env\Scripts\activate.bat
 
 ### Installation
 
-1. Clone the repo
+Clone the repo
 ```sh
 git clone https://github.com/NicoRio42/compass-simulator.git
 ```
-2. pip
+Install the requirements
 ```sh
 pip install requirements.txt
 ```
 
 
 <!-- USAGE EXAMPLES -->
-## Usage
+## Exemple usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+Create Compass, and MagneticField objects with default parameters.
+```py
+from compass_simulator.core import Compass, MagneticField
 
+comp = Compass()
+mag_fld = MagneticField()
+```
+
+Create a Dynamic object for dynamic simulations
+```py
+from compass_simulator.core import Dynamic
+
+dyn = Dynamic(comp, mag_fld, exp_coef_visc=6e-3)
+```
+
+Run the stability simulation, and display the result graph.
+```py
+dyn.stability()
+dyn.display_stab()
+```
 
 <!-- ROADMAP -->
 ## Roadmap
@@ -123,19 +140,3 @@ Distributed under the MIT License. See `LICENSE` for more information.
 Nicolas Rio - nicolas.rio42@gmail.com
 
 Project Link: [https://github.com/NicoRio42/compass-simulator](https://github.com/NicoRio42/compass-simulator)
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/NicoRio42/repo.svg?style=for-the-badge
-[contributors-url]: https://github.com/NicoRio42/compass-simulator/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/NicoRio42/repo.svg?style=for-the-badge
-[forks-url]: https://github.com/NicoRio42/compass-simulator/network/members
-[stars-shield]: https://img.shields.io/github/stars/NicoRio42/repo.svg?style=for-the-badge
-[stars-url]: https://github.com/NicoRio42/compass-simulator/stargazers
-[issues-shield]: https://img.shields.io/github/issues/NicoRio42/repo.svg?style=for-the-badge
-[issues-url]: https://github.com/NicoRio42/compass-simulator/issues
-[license-shield]: https://img.shields.io/github/license/NicoRio42/repo.svg?style=for-the-badge
-[license-url]: https://github.com/NicoRio42/compass-simulator/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/NicoRio42
